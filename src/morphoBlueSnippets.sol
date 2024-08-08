@@ -80,7 +80,7 @@ contract MorphoBlueSnippets {
     function supplyCollateral(
         MarketParams memory marketParams,
         uint256 amount
-    ) external {
+    ) external returns (uint256) {
         ERC20(marketParams.collateralToken).forceApprove(
             address(morpho),
             type(uint256).max
@@ -94,6 +94,8 @@ contract MorphoBlueSnippets {
         address onBehalf = msg.sender;
 
         morpho.supplyCollateral(marketParams, amount, onBehalf, hex"");
+        Position memory p = morpho.position(marketParams.id(), msg.sender);
+        return p.collateral;
     }
 
     /// @notice Handles the withdrawal of collateral by the caller from a specific market of a specific amount.

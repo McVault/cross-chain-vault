@@ -347,21 +347,21 @@ contract MorphoBlueSnippets {
 
         Id marketId = marketParams.id();
 
-        (, , uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho
-            .expectedMarketBalances(marketParams);
+        // (, , uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho
+        //     .expectedMarketBalances(marketParams);
         uint256 borrowShares = morpho
-            .position(marketId, msg.sender)
+            .position(marketId, address(this))
             .borrowShares;
 
-        uint256 repaidAmount = borrowShares.toAssetsUp(
-            totalBorrowAssets,
-            totalBorrowShares
-        );
-        ERC20(marketParams.loanToken).safeTransferFrom(
-            msg.sender,
-            address(this),
-            repaidAmount
-        );
+        // uint256 repaidAmount = borrowShares.toAssetsUp(
+        //     totalBorrowAssets,
+        //     totalBorrowShares
+        // );
+        // ERC20(marketParams.loanToken).safeTransferFrom(
+        //     msg.sender,
+        //     address(this),
+        //     repaidAmount
+        // );
 
         uint256 amount;
         address onBehalf = address(this);
@@ -372,6 +372,14 @@ contract MorphoBlueSnippets {
             onBehalf,
             hex""
         );
+    }
+
+    function repayNew(MarketParams memory marketParams, uint256 assets) public {
+        ERC20(marketParams.loanToken).forceApprove(
+            address(morpho),
+            type(uint256).max
+        );
+        morpho.repay(marketParams, assets, 0, address(this), hex"");
     }
 
     /// @notice Handles the repayment of a specified amount of assets by the caller to a specific market. If the amount

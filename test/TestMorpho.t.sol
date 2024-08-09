@@ -107,7 +107,7 @@ contract MorphoBlueSnippetsTest is Test {
         vm.startPrank(USER);
         console.log("=====3(start)====");
 
-        morphoBlueSnippets.repayAll(marketParams);
+        morphoBlueSnippets.repayNew(marketParams, 2000000000);
 
         console.log("=====3(end)====");
         vm.stopPrank();

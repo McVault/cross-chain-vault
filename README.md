@@ -13,6 +13,7 @@ gist to convert marketParams to Id: https://gist.github.com/tomrpl/3cfd34e04a01f
 - decide stratrgy ✅
 - (BASE) supply ETH to get ezETH on RENZO protocol - deepak
 - (BASE) give collateral of ezETH from MORPHO PROTOCOL - sarvagna ✅
+- (BASE) give authorization MORPHO PROTOCOL - sarvagna
 - (BASE) After providing collateral borrow USDC MORPHO PROTOCOL - sarvagna
   - Bridge USDC from BASE to OPTIMISM using CCIP - Kaushal / deepak
 - (OPTIMISM) supply USDC on SILO protocol - kaushal

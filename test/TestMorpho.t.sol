@@ -9,7 +9,9 @@ import {MarketParamsLib} from "../src/interfaces/morpho/libraries/MarketParamsLi
 contract MorphoBlueSnippetsTest is Test {
     using MorphoLib for IMorpho;
     using MorphoBalancesLib for IMorpho;
-    using MarketParamsLib for MarketParams; // Use the library
+    using MarketParamsLib for MarketParams;
+
+    IMorpho public morpho;
 
     MorphoBlueSnippets morphoBlueSnippets;
     IERC20 loanToken;
@@ -17,32 +19,33 @@ contract MorphoBlueSnippetsTest is Test {
     address morphoAddress = address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
     address USER = vm.envAddress("USER");
     address ezETH = vm.envAddress("ezETH");
-    uint256 amount = 100 ether;
+    uint256 amount = 1 ether;
 
-    // Define market parameters
     MarketParams marketParams;
 
     function setUp() public {
-        // Deploy the MorphoBlueSnippets contract with a dummy Morpho contract address
+        // Deploy
         morphoBlueSnippets = new MorphoBlueSnippets(morphoAddress);
+        console.log("deployed to: ", address(morphoBlueSnippets));
 
-        // Set up the market parameters
-        marketParams.loanToken = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
+        marketParams.loanToken = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC
         marketParams
-            .collateralToken = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110; // ezETH
-        marketParams.oracle = 0x895f9dF47F8a68396eD026978A0771C120DFC279;
-        marketParams.irm = 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC;
+            .collateralToken = 0x2416092f143378750bb29b79eD961ab195CcEea5; // ezETH
+        marketParams.oracle = 0x1BAaB21821c6468f8aee73ee60Fd8Fdc39c0C973;
+        marketParams.irm = 0x46415998764C29aB2a25CbeA6254146D50D22687;
         marketParams.lltv = 770000000000000000;
 
         loanToken = IERC20(marketParams.loanToken);
         collateralToken = IERC20(marketParams.collateralToken);
+        morpho = IMorpho(morphoAddress);
     }
 
-    function testGiveCollateral() public {
+    function testGiveCollateral() internal {
         vm.startPrank(USER);
+        console.log("=====1(start)=====");
+
         deal(address(collateralToken), USER, amount);
 
-        // Approve the MorphoBlueSnippets contract to transfer loan tokens
         collateralToken.approve(address(morphoBlueSnippets), amount);
 
         console.log(
@@ -50,7 +53,6 @@ contract MorphoBlueSnippetsTest is Test {
             collateralToken.balanceOf(USER)
         );
 
-        // call the supplyCollateral function
         uint256 collateralGiven = morphoBlueSnippets.supplyCollateral(
             marketParams,
             amount
@@ -58,39 +60,56 @@ contract MorphoBlueSnippetsTest is Test {
 
         console.log("The collateral given: ", collateralGiven);
 
-        //  ====== supply loan token =======
-        /* console.log(
-            "user collateralToken balance later:",
-            loanToken.balanceOf(USER)
-        );
-        (uint256 assetsSupplied, uint256 sharesSupplied) = morphoBlueSnippets
-            .supply(marketParams, amount);
-
-        console.log("when supplied", assetsSupplied, sharesSupplied);
-
-        console.log(
-            "user collateralToken balance later:",
-            loanToken.balanceOf(USER)
-        ); */
-        // console.log("user balance later:", IERC20(ezETH).balanceOf(USER));
+        assertEq(collateralGiven, amount, "supplyCollateral failed");
 
         // Get the id using the MarketParamsLib
         Id marketParamsId = MarketParamsLib.id(marketParams);
 
         Position memory pos = morphoBlueSnippets.getPosition(
             marketParamsId,
-            USER
+            address(morphoBlueSnippets)
         );
 
-        // Assuming Position struct has fields like `collateralAmount`, `debtAmount`, etc.
         console.log("Position supplyShares:", pos.supplyShares);
         console.log("Position borrowShares:", pos.borrowShares);
         console.log("Position collateral:", pos.collateral);
-        // console.log(
-        //     "USDC balance received:",
-        //     IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48).balanceOf(USER)
-        // );
+        console.log("=====1(end)====");
+        vm.stopPrank();
+    }
 
+    function testAuthorizeAndSupply() public {
+        testGiveCollateral();
+        vm.startPrank(USER);
+        console.log("=====2(start)====");
+
+        morphoBlueSnippets.setAuthorization(true);
+        bool authorizationStatus = morphoBlueSnippets.isAuthorization(
+            address(morphoBlueSnippets)
+        );
+        console.log("authorizationStatus", authorizationStatus);
+        assertEq(authorizationStatus, true);
+
+        console.log("gonna go borrow USDC now");
+        (uint256 assetsBorrowed, uint256 sharesBorrowed) = morphoBlueSnippets
+            .borrow(marketParams, 2000000000); // pass how much usdc to borrow (consider LTV)
+        console.log(
+            "assetsBorrowed & sharesBorrowed: ",
+            assetsBorrowed,
+            sharesBorrowed
+        );
+        console.log("=====2(end)====");
+
+        vm.stopPrank();
+    }
+
+    function testRepay() public {
+        testAuthorizeAndSupply();
+        vm.startPrank(USER);
+        console.log("=====3(start)====");
+
+        morphoBlueSnippets.repayAll(marketParams);
+
+        console.log("=====3(end)====");
         vm.stopPrank();
     }
 }

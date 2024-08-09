@@ -91,10 +91,10 @@ contract MorphoBlueSnippets {
             amount
         );
 
-        address onBehalf = msg.sender;
+        address onBehalf = address(this);
 
         morpho.supplyCollateral(marketParams, amount, onBehalf, hex"");
-        Position memory p = morpho.position(marketParams.id(), msg.sender);
+        Position memory p = morpho.position(marketParams.id(), address(this));
         return p.collateral;
     }
 
@@ -228,6 +228,16 @@ contract MorphoBlueSnippets {
         }
     }
 
+    function setAuthorization(bool newIsAuthorized) public {
+        morpho.setAuthorization(address(this), newIsAuthorized);
+    }
+
+    function isAuthorization(address authorized) public view returns (bool) {
+        return morpho.isAuthorized(address(this), authorized);
+    }
+
+    event logEvent1(address, address);
+
     /// @notice Handles the borrowing of assets by the caller from a specific market.
     /// @param marketParams The parameters of the market.
     /// @param amount The amount of assets the user is borrowing.
@@ -238,8 +248,9 @@ contract MorphoBlueSnippets {
         uint256 amount
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed) {
         uint256 shares;
-        address onBehalf = msg.sender;
-        address receiver = msg.sender;
+        address onBehalf = address(this);
+        address receiver = address(this);
+        emit logEvent1(onBehalf, receiver);
 
         (assetsBorrowed, sharesBorrowed) = morpho.borrow(
             marketParams,
@@ -353,7 +364,7 @@ contract MorphoBlueSnippets {
         );
 
         uint256 amount;
-        address onBehalf = msg.sender;
+        address onBehalf = address(this);
         (assetsRepaid, sharesRepaid) = morpho.repay(
             marketParams,
             amount,

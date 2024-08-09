@@ -77,7 +77,7 @@ contract MorphoBlueSnippetsTest is Test {
         vm.stopPrank();
     }
 
-    function testAuthorizeAndSupply() public {
+    function testAuthorizeAndSupply() internal {
         testGiveCollateral();
         vm.startPrank(USER);
         console.log("=====2(start)====");
@@ -102,7 +102,7 @@ contract MorphoBlueSnippetsTest is Test {
         vm.stopPrank();
     }
 
-    function testRepay() public {
+    function testRepay() internal {
         testAuthorizeAndSupply();
         vm.startPrank(USER);
         console.log("=====3(start)====");
@@ -110,6 +110,25 @@ contract MorphoBlueSnippetsTest is Test {
         morphoBlueSnippets.repayNew(marketParams, 2000000000);
 
         console.log("=====3(end)====");
+        vm.stopPrank();
+    }
+
+    function testWithdrawCollateral() public {
+        testRepay();
+        vm.startPrank(USER);
+        console.log("=====4(start)====");
+        // Get the id using the MarketParamsLib
+        Id marketParamsId = MarketParamsLib.id(marketParams);
+
+        Position memory pos = morphoBlueSnippets.getPosition(
+            marketParamsId,
+            address(morphoBlueSnippets)
+        );
+
+        console.log("Position collateral:", pos.collateral);
+
+        morphoBlueSnippets.withdrawCollateral(marketParams, 0.5 ether); // rn kept .5 to check if its working (to withdraw all collateral have to use some view fn)
+        console.log("=====4(end)====");
         vm.stopPrank();
     }
 }

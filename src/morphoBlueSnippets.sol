@@ -105,8 +105,8 @@ contract MorphoBlueSnippets {
         MarketParams memory marketParams,
         uint256 amount
     ) external {
-        address onBehalf = msg.sender;
-        address receiver = msg.sender;
+        address onBehalf = address(this);
+        address receiver = address(this);
 
         morpho.withdrawCollateral(marketParams, amount, onBehalf, receiver);
     }
@@ -172,8 +172,8 @@ contract MorphoBlueSnippets {
             .supplyShares;
         uint256 amount;
 
-        address onBehalf = msg.sender;
-        address receiver = msg.sender;
+        address onBehalf = address(this);
+        address receiver = address(this);
 
         (assetsWithdrawn, sharesWithdrawn) = morpho.withdraw(
             marketParams,

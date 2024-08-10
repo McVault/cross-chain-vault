@@ -12,6 +12,8 @@ import {OptimismToBase} from "../src/ccip/optimismToBase.sol";
 contract CCIPForkTest is Test {
     CCIPLocalSimulatorFork public ccipLocalSimulatorFork;
 
+    address public ezETH_SiloMarket =
+        0x12ee4BE944b993C81b6840e088bA1dCc57F07B1D;
     IERC20 constant LINK_BASE =
         IERC20(0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196);
     IERC20 constant LINK_OP =
@@ -56,7 +58,7 @@ contract CCIPForkTest is Test {
         vm.makePersistent(address(ccipLocalSimulatorFork));
 
         console.log("Setting up SOURCE CHAIN (BASE)");
-        string memory SOURCE_RPC_URL = vm.envString("BASE_RPC_URL");
+        string memory SOURCE_RPC_URL = vm.envString("FORK_URL_BASE");
         sourceFork = vm.createSelectFork(SOURCE_RPC_URL);
         console.log("Source fork ID:", sourceFork);
         sender = makeAddr("sender");
@@ -86,7 +88,7 @@ contract CCIPForkTest is Test {
         deal(sender, 100 ether);
 
         console.log("Setting up DESTINATION CHAIN (OPTIMISM)");
-        string memory DESTINATION_RPC_URL = vm.envString("OPTIMISM_RPC_URL");
+        string memory DESTINATION_RPC_URL = vm.envString("FORK_URL_OP");
         destinationFork = vm.createSelectFork(DESTINATION_RPC_URL);
         console.log("Destination fork ID:", destinationFork);
         receiver = makeAddr("receiver");

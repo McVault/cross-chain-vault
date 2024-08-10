@@ -10,7 +10,6 @@ import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-
 import "../interfaces/silo/ISiloRouter.sol";
 
 contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
-
     using SafeERC20 for IERC20;
 
     /********************************** CUSTOM ERRORS **********************************************/
@@ -22,7 +21,6 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
     error SourceChainNotAllowed(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
     error SenderNotAllowed(address sender); // Used when the sender has not been allowlisted by the contract owner.
     error InvalidReceiverAddress(); // Used when the receiver address is 0.
-
 
     /********************************** EVENTS **********************************************/
 
@@ -45,7 +43,6 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         address ezEth_SiloMarket,
         address token, // The token address that was transferred.
         uint256 tokenAmount // The token amount that was transferred.
-        
     );
 
     bytes32 private s_lastReceivedMessageId;
@@ -56,7 +53,7 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
     mapping(uint64 => bool) public allowlistedDestinationChains;
     mapping(uint64 => bool) public allowlistedSourceChains;
     mapping(address => bool) public allowlistedSenders;
-    
+
     IERC20 private s_linkToken;
 
     ISiloRouter public siloRouter;
@@ -149,7 +146,7 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         require(
             IERC20(_token).transferFrom(msg.sender, address(this), _amount)
         );
-        
+
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(linkToken) means fees are paid in LINK
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
@@ -158,7 +155,7 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
             _amount,
             address(s_linkToken)
         );
-        
+
         IRouterClient router = IRouterClient(this.getRouter());
         uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
 
@@ -202,10 +199,9 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         validateReceiver(_receiver)
         returns (bytes32 messageId)
     {
-
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(0) means fees are paid in native gas
-        
+
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
             _receiver,
             _token,
@@ -215,7 +211,7 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
 
         // Initialize a router client instance to interact with cross-chain router
         IRouterClient router = IRouterClient(this.getRouter());
-        
+
         // Get the fee required to send the CCIP message
         uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
 
@@ -296,14 +292,24 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         );
     }
 
-    function _depositToSilo(address ezEth_SiloMarket, address depositToken, uint256 depositAmount) public {
-
+    function _depositToSilo(
+        address ezEth_SiloMarket,
+        address depositToken,
+        uint256 depositAmount
+    ) public {
+        require(
+            IERC20(depositToken).transferFrom(
+                msg.sender,
+                address(this),
+                depositAmount
+            )
+        );
         IERC20(depositToken).approve(address(siloRouter), depositAmount);
 
         // Create the deposit action
         ISiloRouter.Action memory depositAction = ISiloRouter.Action({
             actionType: ISiloRouter.ActionType.Deposit,
-            silo: ISilo(ezEth_SiloMarket), 
+            silo: ISilo(ezEth_SiloMarket),
             asset: IERC20(depositToken),
             amount: depositAmount,
             collateralOnly: false
@@ -333,7 +339,11 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
 
         address ezEth_SiloMarket = abi.decode(any2EvmMessage.data, (address));
 
-        _depositToSilo(ezEth_SiloMarket, s_lastReceivedTokenAddress, s_lastReceivedTokenAmount);
+        _depositToSilo(
+            ezEth_SiloMarket,
+            s_lastReceivedTokenAddress,
+            s_lastReceivedTokenAmount
+        );
 
         emit MessageReceived(
             any2EvmMessage.messageId,
@@ -352,9 +362,6 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
     // function withdrawFromSilo(address ezEth_SiloMarket, address depositToken, uint256 depositAmount) public {
 
     // }
-
-
-
 
     function withdraw(address _beneficiary) public onlyOwner {
         uint256 amount = address(this).balance;

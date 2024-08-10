@@ -7,21 +7,24 @@ import {BurnMintERC677Helper, IERC20} from "@chainlink/local/src/ccip/CCIPLocalS
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {BaseToOptimism} from "../src/ccip/baseToOptimism.sol";
-import {OptimismToBase} from "../src/ccip/OptimismToBase.sol";
+import {OptimismToBase} from "../src/ccip/optimismToBase.sol";
 
 contract CCIPForkTest is Test {
     CCIPLocalSimulatorFork public ccipLocalSimulatorFork;
 
-    IERC20 constant LINK_BASE = IERC20(0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196);
-    IERC20 constant LINK_OP = IERC20(0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6);
+    IERC20 constant LINK_BASE =
+        IERC20(0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196);
+    IERC20 constant LINK_OP =
+        IERC20(0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6);
 
-    IERC20 constant USDC_BASE = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
-    IERC20 constant USDC_OP = IERC20(0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85);
+    IERC20 constant USDC_BASE =
+        IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+    IERC20 constant USDC_OP =
+        IERC20(0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85);
 
     // Getting USDC tokens
     address constant BASE_WHALE = 0x0B0A5886664376F59C351ba3f598C8A8B4D0A6f3;
     address constant OP_WHALE = 0xacD03D601e5bB1B275Bb94076fF46ED9D753435A;
-
 
     uint256 public sourceFork;
     uint256 public destinationFork;
@@ -57,7 +60,9 @@ contract CCIPForkTest is Test {
         console.log("Source fork ID:", sourceFork);
         sender = makeAddr("sender");
 
-        Register.NetworkDetails memory sourceNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(block.chainid);
+        Register.NetworkDetails
+            memory sourceNetworkDetails = ccipLocalSimulatorFork
+                .getNetworkDetails(block.chainid);
         console.log("Source chain ID:", block.chainid);
 
         sourceLinkToken = IERC20(sourceNetworkDetails.linkAddress);
@@ -65,11 +70,17 @@ contract CCIPForkTest is Test {
         sourceChainSelector = sourceNetworkDetails.chainSelector;
 
         console.log("Creating BaseToOptimism contract");
-        senderContract = new BaseToOptimism(address(sourceRouter), address(LINK_BASE));
-        console.log("BaseToOptimism contract created at:", address(senderContract));
+        senderContract = new BaseToOptimism(
+            address(sourceRouter),
+            address(LINK_BASE)
+        );
+        console.log(
+            "BaseToOptimism contract created at:",
+            address(senderContract)
+        );
 
         console.log("Dealing USDC to sender on BASE");
-        deal(address(USDC_BASE), sender, 10000 * 10**6);
+        deal(address(USDC_BASE), sender, 10000 * 10 ** 6);
         console.log("Sender USDC balance:", USDC_BASE.balanceOf(sender));
         deal(sender, 100 ether);
 
@@ -79,24 +90,38 @@ contract CCIPForkTest is Test {
         console.log("Destination fork ID:", destinationFork);
         receiver = makeAddr("receiver");
 
-        Register.NetworkDetails memory destinationNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(block.chainid);
+        Register.NetworkDetails
+            memory destinationNetworkDetails = ccipLocalSimulatorFork
+                .getNetworkDetails(block.chainid);
         console.log("Destination chain ID:", block.chainid);
 
-        destinationRouter = IRouterClient(destinationNetworkDetails.routerAddress);
+        destinationRouter = IRouterClient(
+            destinationNetworkDetails.routerAddress
+        );
         destinationChainSelector = destinationNetworkDetails.chainSelector;
 
         console.log("Creating OptimismToBase contract");
-        receiverContract = new OptimismToBase(address(destinationRouter), address(LINK_OP), siloRouter);
-        console.log("OptimismToBase contract created at:", address(receiverContract));
+        receiverContract = new OptimismToBase(
+            address(destinationRouter),
+            address(LINK_OP),
+            siloRouter
+        );
+        console.log(
+            "OptimismToBase contract created at:",
+            address(receiverContract)
+        );
 
         console.log("Dealing USDC to receiver on OPTIMISM");
-        deal(address(USDC_OP), receiver, 10000 * 10**6);
+        deal(address(USDC_OP), receiver, 10000 * 10 ** 6);
         console.log("Receiver USDC balance:", USDC_OP.balanceOf(receiver));
         deal(receiver, 100 ether);
 
         console.log("Performing allowlisting");
         vm.selectFork(sourceFork);
-        senderContract.allowlistDestinationChain(destinationChainSelector, true);
+        senderContract.allowlistDestinationChain(
+            destinationChainSelector,
+            true
+        );
         vm.selectFork(destinationFork);
         receiverContract.allowlistSourceChain(sourceChainSelector, true);
         receiverContract.allowlistSender(address(senderContract), true);
@@ -109,34 +134,40 @@ contract CCIPForkTest is Test {
 
         vm.selectFork(destinationFork);
         uint256 balanceOfReceiverBefore = USDC_OP.balanceOf(receiver);
-        console.log("Initial receiver USDC balance on Optimism:", balanceOfReceiverBefore);
+        console.log(
+            "Initial receiver USDC balance on Optimism:",
+            balanceOfReceiverBefore
+        );
 
         vm.selectFork(sourceFork);
         vm.startPrank(sender);
 
         uint256 balanceOfSenderBefore = USDC_BASE.balanceOf(sender);
-        console.log("Initial sender USDC balance on Base:", balanceOfSenderBefore);
+        console.log(
+            "Initial sender USDC balance on Base:",
+            balanceOfSenderBefore
+        );
 
-        uint256 amountToSend = 100 * 10**6;
+        uint256 amountToSend = 100 * 10 ** 6;
         console.log("Amount to send:", amountToSend);
 
         console.log("Approving USDC spend");
         (USDC_BASE).approve(address(senderContract), amountToSend);
 
         uint256 estimatedFees = senderContract.getEstimatedFees(
-            destinationChainSelector, 
-            address(receiverContract), 
-            ezETH, 
-            address(USDC_BASE), 
+            destinationChainSelector,
+            address(receiverContract),
+            ezETH,
+            address(USDC_BASE),
             amountToSend
         );
-        
+
         console.log("Sending message and paying native fees");
-        senderContract.sendMessagePayNative{value : estimatedFees}(
-            destinationChainSelector, 
-            address(receiverContract), 
-            ezETH, 
-            address(USDC_BASE), 
+        senderContract.sendMessagePayNative{value: estimatedFees}(
+            destinationChainSelector,
+            address(receiverContract),
+            ezETH,
+            address(USDC_BASE),
             amountToSend
         );
 
@@ -150,8 +181,14 @@ contract CCIPForkTest is Test {
         ccipLocalSimulatorFork.switchChainAndRouteMessage(destinationFork);
 
         uint256 balanceOfReceiverAfter = USDC_OP.balanceOf(receiver);
-        console.log("Receiver USDC balance after receiving:", balanceOfReceiverAfter);
-        assertEq(balanceOfReceiverAfter, balanceOfReceiverBefore + amountToSend);
+        console.log(
+            "Receiver USDC balance after receiving:",
+            balanceOfReceiverAfter
+        );
+        assertEq(
+            balanceOfReceiverAfter,
+            balanceOfReceiverBefore + amountToSend
+        );
 
         console.log("test_PayFeesInNative() completed");
     }

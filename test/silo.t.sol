@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
-import "../src/ccip/OptimismToBase.sol";
+import "../src/ccip/optimismToBase.sol";
 import "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 
 contract SiloTest is Test {
@@ -121,8 +121,7 @@ contract SiloTest is Test {
         console.log("Final USDC balance of optimismToBase:", finalUSDCBalance);
 
         // Assert that sUSDC balance has decreased
-        assertEq(
-            finalSUSDCBalance, 0, "Withdrawal from Silo failed");
+        assertEq(finalSUSDCBalance, 0, "Withdrawal from Silo failed");
 
         // Assert that USDC balance has increased
         assertGt(

@@ -8,6 +8,8 @@ import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications
 import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/silo/ISiloRouter.sol";
+import "../interfaces/silo/ISilo.sol";
+
 
 contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
     using SafeERC20 for IERC20;
@@ -297,13 +299,7 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         address depositToken,
         uint256 depositAmount
     ) public {
-        require(
-            IERC20(depositToken).transferFrom(
-                msg.sender,
-                address(this),
-                depositAmount
-            )
-        );
+        
         IERC20(depositToken).approve(address(siloRouter), depositAmount);
 
         // Create the deposit action
@@ -320,6 +316,37 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         actions[0] = depositAction;
         siloRouter.execute(actions);
     }
+    
+    function withdrawFromSilo(address _ezETHMarket, address sUSDC, uint256 _amount) public {
+        ISilo silo = ISilo(_ezETHMarket);
+
+        // require(_ezETHMarket == s_lastReceivedText, "Invalid Market Address..");
+
+        // Ensure user has enough sUSDC collateral
+        uint256 collateralBalance = IERC20(sUSDC).balanceOf(address(this));
+        require(collateralBalance >= _amount, "Insufficient sUSDC balance");
+
+        // Create the withdraw action
+        ISiloRouter.Action memory withdrawAction = ISiloRouter.Action({
+            actionType: ISiloRouter.ActionType.Withdraw,
+            silo: silo,
+            asset: IERC20(sUSDC),
+            amount: type(uint256).max,
+            collateralOnly: false
+        });
+
+        ISiloRouter.Action[] memory actions = new ISiloRouter.Action[](1);
+        actions[0] = withdrawAction;
+        siloRouter.execute(actions);
+
+        // Approve the SiloRouter to transfer the sUSDC collateral if needed
+        IERC20(sUSDC).safeApprove(address(siloRouter), _amount);
+
+        // Execute the withdrawal action through the SiloRouter
+        siloRouter.execute{value: 0}(actions);
+    }
+
+
 
     /// handle a received message
     function _ccipReceive(

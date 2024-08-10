@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.25;
+pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
 import {CCIPLocalSimulatorFork, Register} from "@chainlink/local/src/ccip/CCIPLocalSimulatorFork.sol";
@@ -30,6 +30,7 @@ contract CCIPForkTest is Test {
     uint256 public destinationFork;
 
     address public ezETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
+    address public ezETH_SiloMarket = 0x12ee4BE944b993C81b6840e088bA1dCc57F07B1D;
 
     address public sender;
     address public receiver;
@@ -157,7 +158,7 @@ contract CCIPForkTest is Test {
         uint256 estimatedFees = senderContract.getEstimatedFees(
             destinationChainSelector,
             address(receiverContract),
-            ezETH,
+            ezETH_SiloMarket,
             address(USDC_BASE),
             amountToSend
         );
@@ -166,7 +167,7 @@ contract CCIPForkTest is Test {
         senderContract.sendMessagePayNative{value: estimatedFees}(
             destinationChainSelector,
             address(receiverContract),
-            ezETH,
+            ezETH_SiloMarket,
             address(USDC_BASE),
             amountToSend
         );

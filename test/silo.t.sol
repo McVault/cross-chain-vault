@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
-import "../src/ccip/optimismToBase.sol";
+import "../src/ccip/OptimismToBase.sol";
 import "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/IERC20.sol";
 
 contract SiloTest is Test {
@@ -22,69 +22,113 @@ contract SiloTest is Test {
     address public constant sUSDC_ezETH =
         0x368E6755412184f87436D36558eC3B5f60230c93;
 
-    uint256 public constant DEPOSIT_AMOUNT = 1e6; // 1 USDC
-    address USER = makeAddr("USER");
+    uint256 public constant DEPOSIT_AMOUNT = 1e6;
 
     function setUp() public {
         // Fork Optimism mainnet
-
+        string memory OP_RPC_URL = vm.envString("OPTIMISM_RPC_URL");
+        vm.createSelectFork(OP_RPC_URL);
         // Deploy the contract
         optimismToBase = new OptimismToBase(
             ROUTER_ADDRESS,
             LINK_ADDRESS,
             SILO_ROUTER_ADDRESS
         );
-
-        // Give the OptimismToBase contract some USDC
+        deal(USDC_ADDRESS, address(optimismToBase), 1e7);
     }
 
-    function testDepositToSilo() public {
-        vm.startPrank(USER);
-        deal(USDC_ADDRESS, USER, DEPOSIT_AMOUNT);
-        console.log(
-            "OptimismToBase Contract Address: ",
-            address(optimismToBase)
-        );
-        IERC20(USDC_ADDRESS).approve(address(optimismToBase), DEPOSIT_AMOUNT);
-        // Get the initial balances
-        uint256 initialUSDCBalance = IERC20(USDC_ADDRESS).balanceOf(
-            EZETH_SILO_MARKET
-        ); // scc to market
-        uint256 initialDUSDCBalance = IERC20(sUSDC_ezETH).balanceOf(
-            address(optimismToBase)
-        ); //0
+    // function testDepositToSilo() public {
+    //     // Get the initial balance of USDC in the Silo market
+    //     deal(USDC_ADDRESS, address(optimismToBase), 1e7);
 
-        console.log("Initial USDC balance of Silo Market:", initialUSDCBalance);
-        console.log(
-            "Initial dUSDC balance of OptimismToBase:",
-            initialDUSDCBalance
-        );
+    //     uint256 initialBalance = IERC20(USDC_ADDRESS).balanceOf(
+    //         EZETH_SILO_MARKET
+    //     );
+    //     uint256 initBal = IERC20(sUSDC_ezETH).balanceOf(
+    //         address(optimismToBase)
+    //     );
 
-        // Call the _depositToSilo function
+    //     // Call the _depositToSilo function
+    //     optimismToBase._depositToSilo(
+    //         EZETH_SILO_MARKET,
+    //         USDC_ADDRESS,
+    //         DEPOSIT_AMOUNT
+    //     );
+
+    //     // Get the final balance of USDC in the Silo market
+    //     uint256 finalBalance = IERC20(USDC_ADDRESS).balanceOf(
+    //         EZETH_SILO_MARKET
+    //     );
+    //     uint256 afterBal = IERC20(sUSDC_ezETH).balanceOf(
+    //         address(optimismToBase)
+    //     );
+    //     console.log("sUSDC balance of optimismToBase:", afterBal);
+
+    //     // Assert that the balance has increased by the deposit amount
+    //     assertEq(
+    //         finalBalance,
+    //         initialBalance + DEPOSIT_AMOUNT,
+    //         "Deposit to Silo failed"
+    //     );
+    //     assertGt(afterBal, initBal, "Deposit of sUSDC to the contract failed");
+    // }
+
+    function testWithdrawFromSilo() public {
+        // First, deposit some USDC
+        deal(USDC_ADDRESS, address(optimismToBase), 1e7);
         optimismToBase._depositToSilo(
             EZETH_SILO_MARKET,
             USDC_ADDRESS,
             DEPOSIT_AMOUNT
-        ); // 1USDC
-
-        // Get the final balances
-        uint256 finalUSDCBalance = IERC20(USDC_ADDRESS).balanceOf(
-            EZETH_SILO_MARKET
-        ); //market + 1
-        uint256 finalDUSDCBalance = IERC20(sUSDC_ezETH).balanceOf(
-            address(optimismToBase)
-        ); // should be 1
-
-        console.log("Final USDC balance of Silo Market:", finalUSDCBalance);
-        console.log(
-            "Final dUSDC balance of OptimismToBase:",
-            finalDUSDCBalance
         );
-        vm.stopPrank();
-        // Assert that the USDC balance in the Silo market has increased by the deposit amount
-        // assertEq(finalUSDCBalance, initialUSDCBalance + DEPOSIT_AMOUNT, "Deposit to Silo failed");
 
-        // Assert that the OptimismToBase contract received dUSDC tokens
-        // assertTrue(finalDUSDCBalance > initialDUSDCBalance, "OptimismToBase did not receive dUSDC tokens");
+        // Get initial balances
+        uint256 initialSUSDCBalance = IERC20(sUSDC_ezETH).balanceOf(
+            address(optimismToBase)
+        );
+        uint256 initialUSDCBalance = IERC20(USDC_ADDRESS).balanceOf(
+            address(optimismToBase)
+        );
+
+        console.log(
+            "Initial sUSDC balance of optimismToBase:",
+            initialSUSDCBalance
+        );
+        console.log(
+            "Initial USDC balance of optimismToBase:",
+            initialUSDCBalance
+        );
+
+        // Perform withdrawal
+        optimismToBase.withdrawFromSilo(
+            EZETH_SILO_MARKET,
+            sUSDC_ezETH,
+            initialSUSDCBalance
+        );
+
+        // Get final balances
+        uint256 finalSUSDCBalance = IERC20(sUSDC_ezETH).balanceOf(
+            address(optimismToBase)
+        );
+        uint256 finalUSDCBalance = IERC20(USDC_ADDRESS).balanceOf(
+            address(optimismToBase)
+        );
+
+        console.log(
+            "Final sUSDC balance of optimismToBase:",
+            finalSUSDCBalance
+        );
+        console.log("Final USDC balance of optimismToBase:", finalUSDCBalance);
+
+        // Assert that sUSDC balance has decreased
+        assertEq(
+            finalSUSDCBalance, 0, "Withdrawal from Silo failed");
+
+        // Assert that USDC balance has increased
+        assertGt(
+            finalUSDCBalance,
+            initialUSDCBalance,
+            "USDC not received after withdrawal"
+        );
     }
 }

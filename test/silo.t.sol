@@ -34,7 +34,7 @@ contract SiloTest is Test {
             LINK_ADDRESS,
             SILO_ROUTER_ADDRESS
         );
-        deal(USDC_ADDRESS, address(optimismToBase), 1e7);
+        deal(USDC_ADDRESS, address(optimismToBase), 1e6);
     }
 
     // function testDepositToSilo() public {
@@ -75,7 +75,7 @@ contract SiloTest is Test {
 
     function testWithdrawFromSilo() public {
         // First, deposit some USDC
-        deal(USDC_ADDRESS, address(optimismToBase), 1e7);
+        // deal(USDC_ADDRESS, address(optimismToBase), 1e7);
         optimismToBase._depositToSilo(
             EZETH_SILO_MARKET,
             USDC_ADDRESS,

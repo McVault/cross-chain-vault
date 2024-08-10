@@ -10,7 +10,6 @@ import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-
 import "../interfaces/silo/ISiloRouter.sol";
 import "../interfaces/silo/ISilo.sol";
 
-
 contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
     using SafeERC20 for IERC20;
 
@@ -299,7 +298,6 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         address depositToken,
         uint256 depositAmount
     ) public {
-        
         IERC20(depositToken).approve(address(siloRouter), depositAmount);
 
         // Create the deposit action
@@ -316,8 +314,12 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         actions[0] = depositAction;
         siloRouter.execute(actions);
     }
-    
-    function withdrawFromSilo(address _ezETHMarket, address sUSDC, uint256 _amount) public {
+
+    function withdrawFromSilo(
+        address _ezETHMarket,
+        address sUSDC,
+        uint256 _amount
+    ) public {
         ISilo silo = ISilo(_ezETHMarket);
 
         // require(_ezETHMarket == s_lastReceivedText, "Invalid Market Address..");
@@ -330,8 +332,8 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         ISiloRouter.Action memory withdrawAction = ISiloRouter.Action({
             actionType: ISiloRouter.ActionType.Withdraw,
             silo: silo,
-            asset: IERC20(sUSDC),
-            amount: type(uint256).max,
+            asset: IERC20(0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85),
+            amount: 1000,
             collateralOnly: false
         });
 
@@ -345,8 +347,6 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         // Execute the withdrawal action through the SiloRouter
         siloRouter.execute{value: 0}(actions);
     }
-
-
 
     /// handle a received message
     function _ccipReceive(

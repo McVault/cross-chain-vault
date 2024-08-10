@@ -8,7 +8,6 @@ import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-sol
 import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.3/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract BaseToOptimism is CCIPReceiver, OwnerIsCreator {
-
     using SafeERC20 for IERC20;
 
     /********************************** CUSTOM ERRORS **********************************************/
@@ -20,7 +19,6 @@ contract BaseToOptimism is CCIPReceiver, OwnerIsCreator {
     error SourceChainNotAllowed(uint64 sourceChainSelector); // Used when the source chain has not been allowlisted by the contract owner.
     error SenderNotAllowed(address sender); // Used when the sender has not been allowlisted by the contract owner.
     error InvalidReceiverAddress(); // Used when the receiver address is 0.
-
 
     /********************************** EVENTS **********************************************/
 
@@ -53,13 +51,10 @@ contract BaseToOptimism is CCIPReceiver, OwnerIsCreator {
     mapping(uint64 => bool) public allowlistedDestinationChains;
     mapping(uint64 => bool) public allowlistedSourceChains;
     mapping(address => bool) public allowlistedSenders;
-    
+
     IERC20 private s_linkToken;
 
-    constructor(
-        address _router,
-        address _link
-    ) CCIPReceiver(_router) {
+    constructor(address _router, address _link) CCIPReceiver(_router) {
         s_linkToken = IERC20(_link);
     }
 
@@ -145,7 +140,7 @@ contract BaseToOptimism is CCIPReceiver, OwnerIsCreator {
         require(
             IERC20(_token).transferFrom(msg.sender, address(this), _amount)
         );
-        
+
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(linkToken) means fees are paid in LINK
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
@@ -155,7 +150,7 @@ contract BaseToOptimism is CCIPReceiver, OwnerIsCreator {
             _amount,
             address(s_linkToken)
         );
-        
+
         IRouterClient router = IRouterClient(this.getRouter());
         uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
 
@@ -201,13 +196,12 @@ contract BaseToOptimism is CCIPReceiver, OwnerIsCreator {
         validateReceiver(_receiver)
         returns (bytes32 messageId)
     {
-
         require(
             IERC20(_token).transferFrom(msg.sender, address(this), _amount)
         );
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         // address(0) means fees are paid in native gas
-        
+
         Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
             _receiver,
             ezEth_SiloMarket,
@@ -218,7 +212,7 @@ contract BaseToOptimism is CCIPReceiver, OwnerIsCreator {
 
         // Initialize a router client instance to interact with cross-chain router
         IRouterClient router = IRouterClient(this.getRouter());
-        
+
         // Get the fee required to send the CCIP message
         uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
 

@@ -91,7 +91,7 @@ contract MorphoBlueSnippetsTest is Test {
 
         console.log("gonna go borrow USDC now");
         (uint256 assetsBorrowed, uint256 sharesBorrowed) = morphoBlueSnippets
-            .borrow(marketParams, 2000000000); // pass how much usdc to borrow (consider LTV)
+            .borrow(marketParams, 2000000000, address(morphoBlueSnippets)); // pass how much usdc to borrow (consider LTV)
         console.log(
             "assetsBorrowed & sharesBorrowed: ",
             assetsBorrowed,
@@ -127,7 +127,11 @@ contract MorphoBlueSnippetsTest is Test {
 
         console.log("Position collateral:", pos.collateral);
 
-        morphoBlueSnippets.withdrawCollateral(marketParams, 0.5 ether); // rn kept .5 to check if its working (to withdraw all collateral have to use some view fn)
+        morphoBlueSnippets.withdrawCollateral(
+            marketParams,
+            0.5 ether,
+            address(morphoBlueSnippets)
+        ); // rn kept .5 to check if its working (to withdraw all collateral have to use some view fn)
         console.log("=====4(end)====");
         vm.stopPrank();
     }

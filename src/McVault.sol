@@ -23,7 +23,7 @@ contract McVault is ERC4626, Ownable {
     MarketParams public marketParams; // params for morpho market of EzETH and USDC
     uint256 public constant WITHDRAWAL_LOCK_PERIOD = 30 days;
     mapping(address => uint256) public lastDepositTimestamp;
-    address public USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address public USDC;
 
     event Borrowed(uint256 assetsBorrowed, uint256 sharesBorrowed);
     event Repaid(uint256 assetsRepaid, uint256 sharesRepaid);
@@ -36,7 +36,8 @@ contract McVault is ERC4626, Ownable {
         address _renzo,
         address _baseToOptimism,
         IERC20 _asset,
-        IERC20 _ezETH
+        IERC20 _ezETH,
+        address _USDC
     ) ERC4626(_asset) ERC20("Mc Vault", "MCV") Ownable(msg.sender) {
         underlyingAsset = IERC20(_asset);
         morphoBlue = MorphoBlueSnippets(_morphoBlue);
@@ -44,6 +45,7 @@ contract McVault is ERC4626, Ownable {
         baseToOptimism = BaseToOptimism(payable(_baseToOptimism));
         swapRouter = ISwapRouter(_swapRouter);
         ezETH = _ezETH;
+        USDC = _USDC;
 
         //Morpho
         marketParams.loanToken = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // USDC
@@ -84,18 +86,35 @@ contract McVault is ERC4626, Ownable {
         return shares;
     }
 
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) public virtual override canWithdraw returns (uint256) {
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
+
+        uint256 assets = previewRedeem(shares);
+        _withdraw(_msgSender(), receiver, owner, assets, shares);
+
+        return assets;
+    }
+
     function depositOnRenzo(
         uint256 _amountIn,
         uint256 _minOut,
         uint256 _deadline
-    ) public returns (uint256) {
+    ) public onlyOwner returns (uint256) {
         underlyingAsset.approve(address(renzo), _amountIn);
         return renzo.deposit(_amountIn, _minOut, _deadline);
     }
 
     function depositOnMorpho(
-        uint256 assets
-    ) public returns (uint256 assetsSupplied, uint256 sharesSupplied) {
+        uint256 assets,
+        uint256 maxBorrow
+    ) public returns (uint256, uint256, uint256) {
         IERC20(marketParams.collateralToken).approve(
             address(morphoBlue),
             assets
@@ -107,14 +126,14 @@ contract McVault is ERC4626, Ownable {
 
         morphoBlue.setAuthorization(true);
 
-        uint256 maxBorrow = (collateralSupplied * marketParams.lltv) / 1e18;
         (uint256 assetsBorrowed, uint256 sharesBorrowed) = morphoBlue.borrow(
             marketParams,
-            1000000
+            maxBorrow,
+            address(this)
         );
 
         emit Borrowed(assetsBorrowed, sharesBorrowed);
-        return (collateralSupplied, sharesBorrowed);
+        return (collateralSupplied, sharesBorrowed, assetsBorrowed);
     }
 
     function afterDeposit(uint256 assets) external onlyOwner {
@@ -127,7 +146,6 @@ contract McVault is ERC4626, Ownable {
             block.timestamp + 1 hours
         );
         require(ezETHAmount > 0, "EzETH should be greater than zero");
-        depositOnMorpho(ezETHAmount);
     }
 
     function bridgeUsdcFromBaseToOP(
@@ -135,7 +153,7 @@ contract McVault is ERC4626, Ownable {
         address _receiver,
         address ezEth_SiloMarket,
         address _token
-    ) external payable {
+    ) external payable onlyOwner {
         uint256 amountToBridge = IERC20(USDC).balanceOf(address(this)); //USDC
 
         IERC20(USDC).approve(address(baseToOptimism), amountToBridge); //approve USDC to baseOptimism Contract
@@ -168,35 +186,36 @@ contract McVault is ERC4626, Ownable {
 
         // Repay borrowed amount
         if (borrowShares > 0) {
-            // Approve the loan token for repayment if necessary
             IERC20(marketParams.loanToken).approve(
                 address(morphoBlue),
                 type(uint256).max
             );
 
-            // Call repayNew without expecting a return value
             morphoBlue.repayNew(marketParams, borrowShares);
 
-            // You might want to emit an event here, but we don't have the exact repaid amounts
             emit Repaid(0, borrowShares);
         }
 
         // Withdraw collateral
         if (collateralToWithdraw > 0) {
-            morphoBlue.withdrawCollateral(marketParams, collateralToWithdraw);
+            morphoBlue.withdrawCollateral(
+                marketParams,
+                collateralToWithdraw,
+                address(this)
+            );
 
             uint EzETHAmount = ezETH.balanceOf(address(this));
 
-            uint256 wethAmount = swapEzETHForWETH(EzETHAmount);
-            require(wethAmount > 0, "WETH amount should be greater than zero");
-
-            return wethAmount;
+            return EzETHAmount;
         }
 
         return 0;
     }
 
-    function swapEzETHForWETH(uint256 ezETHAmount) internal returns (uint256) {
+    function swapEzETHForWETH(
+        uint256 ezETHAmount,
+        uint256 amountOutMinimum
+    ) external onlyOwner returns (uint256) {
         ezETH.approve(address(swapRouter), ezETHAmount);
 
         // Set up the parameters for the swap
@@ -208,7 +227,7 @@ contract McVault is ERC4626, Ownable {
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: ezETHAmount,
-                amountOutMinimum: 0, // Be careful with this in production!
+                amountOutMinimum: amountOutMinimum,
                 sqrtPriceLimitX96: 0
             });
 

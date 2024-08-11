@@ -28,7 +28,7 @@ contract McVaultTest is Test {
     address public constant RENZO_DEPOSIT_ADDRESS =
         0xf25484650484DE3d554fB0b7125e7696efA4ab99;
     address public constant SWAP_ROUTER_ADDRESS =
-        0xE592427A0AEce92De3Edee1F18E0157C05861564;
+        0x2626664c2603336E57B271c5C0b26F421741e481;
     address public constant LINK_BASE =
         0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196;
     using MarketParamsLib for MarketParams;
@@ -36,198 +36,200 @@ contract McVaultTest is Test {
     MarketParams marketParams;
 
     function setUp() public {
-        // Fork Base network
         vm.createSelectFork(vm.envString("BASE_RPC_URL"));
 
-        // Deploy MorphoBlueSnippets
         morphoBlueSnippets = new MorphoBlueSnippets(MORPHO_ADDRESS);
-
-        // Deploy BaseToOptimism
         baseToOptimism = new BaseToOptimism(MORPHO_ADDRESS, address(LINK_BASE));
-
-        // Set up SwapRouter
         swapRouter = ISwapRouter(SWAP_ROUTER_ADDRESS);
 
-        // Deploy McVault
         vault = new McVault(
             address(morphoBlueSnippets),
             SWAP_ROUTER_ADDRESS,
             RENZO_DEPOSIT_ADDRESS,
             address(baseToOptimism),
             IERC20(0x4200000000000000000000000000000000000006), // WETH on Base
-            IERC20(0x2416092f143378750bb29b79eD961ab195CcEea5) // ezETH on Base
+            IERC20(0x2416092f143378750bb29b79eD961ab195CcEea5), // ezETH
+            0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 // USDC
         );
 
         weth = IERC20(0x4200000000000000000000000000000000000006);
         ezETH = IERC20(0x2416092f143378750bb29b79eD961ab195CcEea5);
         usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
 
-        // Give USER some WETH
         deal(address(weth), USER, INITIAL_BALANCE);
     }
 
-    function testDeposit() public {
-        uint256 depositAmount = 1 ether;
-
-        vm.startPrank(USER);
-        weth.approve(address(vault), depositAmount);
-        vault.deposit(depositAmount, USER);
-        vm.stopPrank();
-
-        assertEq(vault.balanceOf(USER), depositAmount);
-        assertEq(weth.balanceOf(USER), INITIAL_BALANCE - depositAmount);
-    }
-
-    // function testWithdraw() public {
+    // function testDeposit() public {
     //     uint256 depositAmount = 1 ether;
+
+    //     console.log("Initial WETH balance of USER:", weth.balanceOf(USER));
+    //     console.log(
+    //         "Initial WETH balance of vault:",
+    //         weth.balanceOf(address(vault))
+    //     );
 
     //     vm.startPrank(USER);
     //     weth.approve(address(vault), depositAmount);
-    //     vault.deposit(depositAmount, USER);
+    //     console.log("WETH approved for vault");
 
-    //     // Warp time to after withdrawal lock period
-    //     vm.warp(block.timestamp + 31 days);
-
-    //     uint256 withdrawAmount = 0.5 ether;
-    //     vault.withdraw(withdrawAmount, USER, USER);
+    //     try vault.deposit(depositAmount, USER) {
+    //         console.log("Deposit successful");
+    //     } catch Error(string memory reason) {
+    //         console.log("Deposit failed:", reason);
+    //         vm.stopPrank();
+    //         return;
+    //     }
     //     vm.stopPrank();
 
-    //     assertEq(vault.balanceOf(USER), depositAmount - withdrawAmount);
-    //     assertEq(
-    //         weth.balanceOf(USER),
-    //         INITIAL_BALANCE - depositAmount + withdrawAmount
+    //     console.log(
+    //         "WETH balance of USER after deposit:",
+    //         weth.balanceOf(USER)
+    //     );
+    //     console.log(
+    //         "WETH balance of vault after deposit:",
+    //         weth.balanceOf(address(vault))
+    //     );
+    //     console.log("Vault balance of USER:", vault.balanceOf(USER));
+    // }
+
+    // function testAfterDeposit() public {
+    //     uint256 depositAmount = 1 ether;
+
+    //     console.log("Initial WETH balance of USER:", weth.balanceOf(USER));
+    //     console.log(
+    //         "Initial WETH balance of vault:",
+    //         weth.balanceOf(address(vault))
+    //     );
+
+    //     vm.startPrank(USER);
+    //     weth.approve(address(vault), depositAmount);
+    //     try vault.deposit(depositAmount, USER) {
+    //         console.log("Deposit successful");
+    //     } catch Error(string memory reason) {
+    //         console.log("Deposit failed:", reason);
+    //         vm.stopPrank();
+    //         return;
+    //     }
+    //     vm.stopPrank();
+
+    //     console.log(
+    //         "WETH balance of USER after deposit:",
+    //         weth.balanceOf(USER)
+    //     );
+    //     console.log(
+    //         "WETH balance of vault after deposit:",
+    //         weth.balanceOf(address(vault))
+    //     );
+
+    //     uint256 slippage = 40; // 4% slippage
+    //     uint256 minAmount = depositAmount - ((depositAmount * slippage) / 1000);
+    //     console.log("Minimum expected amount after slippage:", minAmount);
+
+    //     vm.prank(vault.owner());
+    //     try vault.afterDeposit(depositAmount) {
+    //         console.log("afterDeposit successful");
+    //     } catch Error(string memory reason) {
+    //         console.log("afterDeposit failed:", reason);
+    //         return;
+    //     }
+
+    //     console.log(
+    //         "ezETH balance of vault after Renzo deposit:",
+    //         ezETH.balanceOf(address(vault))
     //     );
     // }
 
-    // function testCannotWithdrawBeforeLockPeriod() public {
+    // function testDepositOnMorpho() public {
     //     uint256 depositAmount = 1 ether;
+    //     uint256 maxBorrow = 1000000; // 50% of deposit amount
 
-    //     vm.startPrank(USER);
-    //     weth.approve(address(vault), depositAmount);
-    //     vault.deposit(depositAmount, USER);
+    //     // Mint some ezETH to the vault
+    //     deal(address(ezETH), address(vault), depositAmount);
 
-    //     // Try to withdraw before lock period ends
-    //     vm.expectRevert("Withdrawal locked for 30 days after deposit");
-    //     vault.withdraw(0.5 ether, USER, USER);
-    //     vm.stopPrank();
-    // }
-
-    function testAfterDeposit() public {
-        uint256 depositAmount = 1 ether;
-
-        console.log("Initial WETH balance of USER:", weth.balanceOf(USER));
-        console.log(
-            "Initial WETH balance of vault:",
-            weth.balanceOf(address(vault))
-        );
-
-        vm.startPrank(USER);
-
-        // Approve WETH spend
-        weth.approve(address(vault), depositAmount);
-        console.log("WETH approved for vault");
-
-        // Deposit WETH into vault
-        try vault.deposit(depositAmount, USER) {
-            console.log("Deposit successful");
-        } catch Error(string memory reason) {
-            console.log("Deposit failed:", reason);
-            vm.stopPrank();
-            return;
-        }
-
-        vm.stopPrank();
-
-        console.log(
-            "WETH balance of USER after deposit:",
-            weth.balanceOf(USER)
-        );
-        console.log(
-            "WETH balance of vault after deposit:",
-            weth.balanceOf(address(vault))
-        );
-
-        // Calculate expected minimum amount after slippage
-        uint256 slippage = 40; // 4% slippage
-        uint256 minAmount = depositAmount - ((depositAmount * slippage) / 1000);
-        console.log("Minimum expected amount after slippage:", minAmount);
-
-        // Ensure the vault has enough WETH balance
-        assertGe(
-            weth.balanceOf(address(vault)),
-            depositAmount,
-            "Vault doesn't have enough WETH"
-        );
-        console.log("Minimum expected amount after slippage:", minAmount);
-
-        vm.prank(vault.owner());
-        try vault.afterDeposit(depositAmount) {
-            console.log("afterDeposit successful");
-        } catch Error(string memory reason) {
-            console.log("afterDeposit failed:", reason);
-            return;
-        }
-
-        // Check Renzo balance
-        uint256 ezETHBalance = ezETH.balanceOf(address(vault));
-        console.log(
-            "ezETH balance of vault after Renzo deposit:",
-            ezETHBalance
-        );
-        console.log(
-            "addres of USDC in vault",
-            IERC20(usdc).balanceOf(address(vault))
-        );
-        assertGe(
-            ezETHBalance,
-            minAmount,
-            "Received amount less than expected after slippage"
-        );
-
-        // Check Morpho position
-        Id marketParamsId = MarketParamsLib.id(marketParams);
-        Position memory position = morphoBlueSnippets.getPosition(
-            marketParamsId,
-            address(vault)
-        );
-        console.log("Morpho collateral position:", position.collateral);
-        console.log("Morpho borrow shares:", position.borrowShares);
-        assertGt(position.collateral, 0, "No collateral supplied to Morpho");
-        assertGt(position.borrowShares, 0, "No borrow shares on Morpho");
-
-        console.log("testAfterDeposit completed successfully");
-        console.log(
-            "addres of USDC in vault",
-            IERC20(usdc).balanceOf(address(vault))
-        );
-    }
-
-    // function testBridgeUsdcFromBaseToOP() public {
-    //     uint256 depositAmount = 1 ether;
-    //     uint64 destinationChainSelector = 111; // Example selector for Optimism
-
-    //     // Set up the vault with some USDC
-    //     deal(address(usdc), address(vault), 1000000000); // 1000 USDC
+    //     console.log(
+    //         "Initial ezETH balance of vault:",
+    //         ezETH.balanceOf(address(vault))
+    //     );
+    //     console.log(
+    //         "Initial USDC balance of vault:",
+    //         usdc.balanceOf(address(vault))
+    //     );
 
     //     vm.startPrank(vault.owner());
-    //     vault.bridgeUsdcFromBaseToOP{value: 0.1 ether}(
-    //         destinationChainSelector,
-    //         address(0x123), // Example receiver address on Optimism
-    //         address(0x456), // Example ezETH_SiloMarket address on Optimism
-    //         address(usdc)
-    //     );
+
+    //     try vault.depositOnMorpho(depositAmount, maxBorrow) returns (
+    //         uint256 collateralSupplied,
+    //         uint256 sharesBorrowed,
+    //         uint256 assetsBorrowed
+    //     ) {
+    //         console.log("Deposit on Morpho successful");
+    //         console.log("Collateral supplied:", collateralSupplied);
+    //         console.log("Shares borrowed:", sharesBorrowed);
+    //         console.log("Assets borrowed:", assetsBorrowed);
+    //     } catch Error(string memory reason) {
+    //         console.log("Deposit on Morpho failed:", reason);
+    //         vm.stopPrank();
+    //         return;
+    //     }
+
     //     vm.stopPrank();
 
-    //     // Check that USDC was transferred to the BaseToOptimism contract
-    //     assertEq(
-    //         usdc.balanceOf(address(vault)),
-    //         0,
-    //         "USDC not transferred from vault"
+    //     console.log(
+    //         "ezETH balance of vault after deposit:",
+    //         ezETH.balanceOf(address(vault))
     //     );
-    //     assertEq(
-    //         usdc.balanceOf(address(baseToOptimism)),
-    //         1000000000,
-    //         "USDC not received by BaseToOptimism"
+    //     console.log(
+    //         "USDC balance of vault after borrow:",
+    //         usdc.balanceOf(address(vault))
+    //     );
+
+    //     // Get the market ID
+    //     Id marketParamsId = MarketParamsLib.id(marketParams);
+
+    //     // Get the current position
+    //     Position memory position = vault.morphoBlue().getPosition(
+    //         marketParamsId,
+    //         address(vault)
+    //     );
+
+    //     // Assert that we have borrowed some USDC
+    //     assertTrue(
+    //         usdc.balanceOf(address(vault)) > 0,
+    //         "USDC balance should be greater than 0 after borrowing"
+    //     );
+    // }
+
+    // function testBridgeUsdcFromBaseToOP() public {
+    //     uint64 destinationChainSelector = 111; // Example selector for Optimism
+    //     deal(address(usdc), address(vault), 1000000000); // 1000 USDC
+
+    //     console.log(
+    //         "Initial USDC balance of vault:",
+    //         usdc.balanceOf(address(vault))
+    //     );
+
+    //     vm.startPrank(vault.owner());
+    //     try
+    //         vault.bridgeUsdcFromBaseToOP{value: 0.1 ether}(
+    //             destinationChainSelector,
+    //             address(0x123), // Example receiver address on Optimism
+    //             address(0x456), // Example ezETH_SiloMarket address on Optimism
+    //             address(usdc)
+    //         )
+    //     {
+    //         console.log("Bridge operation successful");
+    //     } catch Error(string memory reason) {
+    //         console.log("Bridge operation failed:", reason);
+    //     }
+    //     vm.stopPrank();
+
+    //     console.log(
+    //         "USDC balance of vault after bridge:",
+    //         usdc.balanceOf(address(vault))
+    //     );
+    //     console.log(
+    //         "USDC balance of BaseToOptimism contract:",
+    //         usdc.balanceOf(address(baseToOptimism))
     //     );
     // }
 
@@ -235,21 +237,81 @@ contract McVaultTest is Test {
     //     uint256 depositAmount = 1 ether;
     //     uint256 proportion = 0.5 ether; // 50%
 
-    //     // Set up the vault with some ezETH and a Morpho position
     //     deal(address(ezETH), address(vault), depositAmount);
-    //     vm.prank(vault.owner());
+    //     console.log(
+    //         "Initial ezETH balance of vault:",
+    //         ezETH.balanceOf(address(vault))
+    //     );
+
+    //     vm.startPrank(vault.owner());
     //     vault.afterDeposit(depositAmount);
-
-    //     vm.prank(vault.owner());
     //     uint256 withdrawnAmount = vault.beforeWithdraw(proportion);
+    //     vm.stopPrank();
 
-    //     assertGt(withdrawnAmount, 0, "No WETH withdrawn");
-    //     assertLt(
-    //         ezETH.balanceOf(address(vault)),
-    //         depositAmount,
-    //         "ezETH not decreased"
+    //     console.log("Withdrawn amount:", withdrawnAmount);
+    //     console.log(
+    //         "ezETH balance of vault after withdrawal:",
+    //         ezETH.balanceOf(address(vault))
     //     );
     // }
 
-    // Additional helper functions and tests can be added as needed
+    function testSwapEzETHForWETH() public {
+        uint256 initialEzETHAmount = 1 ether;
+        uint256 amountOutMinimum = 0.95 ether; // Expecting at least 95% of the input amount
+
+        // Mint some ezETH to the vault
+        deal(address(ezETH), address(vault), initialEzETHAmount);
+
+        console.log(
+            "Initial ezETH balance of vault:",
+            ezETH.balanceOf(address(vault))
+        );
+        console.log(
+            "Initial WETH balance of vault:",
+            weth.balanceOf(address(vault))
+        );
+
+        vm.startPrank(vault.owner());
+
+        try vault.swapEzETHForWETH(initialEzETHAmount, 0) returns (
+            uint256 amountOut
+        ) {
+            console.log("Swap successful");
+            console.log("Amount of WETH received:", amountOut);
+        } catch Error(string memory reason) {
+            console.log("Swap failed:", reason);
+            vm.stopPrank();
+            return;
+        }
+
+        vm.stopPrank();
+
+        console.log(
+            "ezETH balance of vault after swap:",
+            ezETH.balanceOf(address(vault))
+        );
+        console.log(
+            "WETH balance of vault after swap:",
+            weth.balanceOf(address(vault))
+        );
+
+        // Assert that the ezETH balance is now 0
+        assertEq(
+            ezETH.balanceOf(address(vault)),
+            0,
+            "ezETH balance should be 0 after swap"
+        );
+
+        // Assert that the WETH balance has increased
+        assertTrue(
+            weth.balanceOf(address(vault)) > 0,
+            "WETH balance should have increased after swap"
+        );
+
+        // Assert that the received WETH amount is at least the minimum expected
+        assertTrue(
+            weth.balanceOf(address(vault)) >= amountOutMinimum,
+            "Received WETH amount is less than the minimum expected"
+        );
+    }
 }

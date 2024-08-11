@@ -1,0 +1,103 @@
+<mxfile>
+  <diagram name="McVault Flowchart" id="McVaultFlowchart">
+    <mxGraphModel dx="808" dy="384" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Start of the flowchart -->
+        <mxCell id="2" value="Start" style="ellipse;fillColor=#FFEB3B;strokeColor=#FFC107;fontColor=#000000;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="40" width="80" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Users deposit WETH -->
+        <mxCell id="3" value="Users deposit WETH" style="rounded=1;fillColor=#4CAF50;strokeColor=#388E3C;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="120" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4" edge="1" parent="1" source="2" target="3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Convert to ezETH on Renzo Protocol -->
+        <mxCell id="5" value="Convert to ezETH on Renzo Protocol" style="rounded=1;fillColor=#2196F3;strokeColor=#1976D2;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="220" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="6" edge="1" parent="1" source="3" target="5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Borrow USDC from MorphoBlue -->
+        <mxCell id="7" value="Borrow USDC from MorphoBlue (-46% APY)" style="rounded=1;fillColor=#FF9800;strokeColor=#F57C00;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="320" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="8" edge="1" parent="1" source="5" target="7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Bridge USDC to Optimism via CCIP -->
+        <mxCell id="9" value="Bridge USDC to Optimism via CCIP" style="rounded=1;fillColor=#9C27B0;strokeColor=#7B1FA2;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="420" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="10" edge="1" parent="1" source="7" target="9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Deposit USDC into Silo Finance (13.3% APY) -->
+        <mxCell id="11" value="Deposit USDC into Silo Finance (13.3% APY)" style="rounded=1;fillColor=#FF5722;strokeColor=#E64A19;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="520" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="12" edge="1" parent="1" source="9" target="11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Upon maturity, swap OP rewards for USDC -->
+        <mxCell id="13" value="Upon maturity, swap OP rewards for USDC" style="rounded=1;fillColor=#3F51B5;strokeColor=#303F9F;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="620" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="14" edge="1" parent="1" source="11" target="13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Bridge USDC back to Base chain -->
+        <mxCell id="15" value="Bridge USDC back to Base chain" style="rounded=1;fillColor=#8BC34A;strokeColor=#689F38;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="720" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="16" edge="1" parent="1" source="13" target="15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Repay MorphoBlue loan and reclaim ezETH -->
+        <mxCell id="17" value="Repay MorphoBlue loan and reclaim ezETH" style="rounded=1;fillColor=#CDDC39;strokeColor=#AFB42B;fontColor=#000000;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="820" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="18" edge="1" parent="1" source="15" target="17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Swap ezETH back to WETH -->
+        <mxCell id="19" value="Swap ezETH back to WETH" style="rounded=1;fillColor=#00BCD4;strokeColor=#0097A7;fontColor=#FFFFFF;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="920" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="20" edge="1" parent="1" source="17" target="19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Deliver WETH back to user -->
+        <mxCell id="21" value="Deliver WETH back to user (~59% APY)" style="rounded=1;fillColor=#FFEB3B;strokeColor=#FBC02D;fontColor=#000000;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1020" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="22" edge="1" parent="1" source="19" target="21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- End of the flowchart -->
+        <mxCell id="23" value="End" style="ellipse;fillColor=#FFEB3B;strokeColor=#FFC107;fontColor=#000000;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="1140" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="24" edge="1" parent="1" source="21" target="23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -103,10 +103,11 @@ contract MorphoBlueSnippets {
     /// @param amount The amount of collateral the user is withdrawing.
     function withdrawCollateral(
         MarketParams memory marketParams,
-        uint256 amount
+        uint256 amount,
+        address _receiver
     ) external {
         address onBehalf = address(this);
-        address receiver = address(this);
+        address receiver = _receiver;
 
         morpho.withdrawCollateral(marketParams, amount, onBehalf, receiver);
     }
@@ -245,11 +246,12 @@ contract MorphoBlueSnippets {
     /// @return sharesBorrowed The shares borrowed in return for the assets.
     function borrow(
         MarketParams memory marketParams,
-        uint256 amount
+        uint256 amount,
+        address _receiver
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed) {
         uint256 shares;
         address onBehalf = address(this);
-        address receiver = address(this);
+        address receiver = _receiver;
         emit logEvent1(onBehalf, receiver);
 
         (assetsBorrowed, sharesBorrowed) = morpho.borrow(

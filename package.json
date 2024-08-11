@@ -23,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/McVault/cross-chain-vault/issues"
   },
-  "homepage": "https://github.com/McVault/cross-chain-vault#readme"
+  "homepage": "https://github.com/McVault/cross-chain-vault#readme",
+  "dependencies": {
+    "@uniswap/universal-router": "^1.6.0"
+  }
 }

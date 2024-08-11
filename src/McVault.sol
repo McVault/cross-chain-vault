@@ -29,6 +29,7 @@ contract McVault is ERC4626, Ownable {
     event Repaid(uint256 assetsRepaid, uint256 sharesRepaid);
     event CollateralWithdrawn(uint256 collateralWithdrawn);
     event Swapped(uint256 ezETHAmount, uint256 wethReceived);
+    event balanceOFWETH(uint256);
 
     constructor(
         address _morphoBlue,
@@ -214,16 +215,18 @@ contract McVault is ERC4626, Ownable {
 
     function swapEzETHForWETH(
         uint256 ezETHAmount,
-        uint256 amountOutMinimum
+        uint256 amountOutMinimum,
+        uint24 _feetier
     ) external onlyOwner returns (uint256) {
         ezETH.approve(address(swapRouter), ezETHAmount);
 
+        emit balanceOFWETH(ezETH.balanceOf(address(this)));
         // Set up the parameters for the swap
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: address(ezETH),
                 tokenOut: address(underlyingAsset),
-                fee: 3000, // 0.3% fee tier
+                fee: _feetier, // 0.3% fee tier
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: ezETHAmount,
@@ -236,5 +239,42 @@ contract McVault is ERC4626, Ownable {
         emit Swapped(ezETHAmount, amountOut);
 
         return amountOut;
+    }
+
+    function swapRewardsToWETH(
+        address _opTokens,
+        uint256 amountOutMinimum,
+        uint24 _feetier
+    ) external onlyOwner returns (uint256) {
+        uint256 amountIn = IERC20(_opTokens).balanceOf(address(this));
+        IERC20(_opTokens).approve(address(swapRouter), amountIn);
+
+        emit balanceOFWETH(ezETH.balanceOf(address(this)));
+        // Set up the parameters for the swap
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: _opTokens,
+                tokenOut: address(underlyingAsset),
+                fee: _feetier, // 0.3% fee tier
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: amountOutMinimum,
+                sqrtPriceLimitX96: 0
+            });
+
+        uint256 amountOut = swapRouter.exactInputSingle(params);
+        emit Swapped(amountIn, amountOut);
+
+        return amountOut;
+    }
+
+    function withdrawOpRewards(
+        address target,
+        bytes memory data
+    ) public onlyOwner returns (bytes memory) {
+        (bool success, bytes memory result) = target.call(data);
+        require(success, "Function call failed");
+        return result;
     }
 }

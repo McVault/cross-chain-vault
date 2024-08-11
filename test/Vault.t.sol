@@ -257,10 +257,9 @@ contract McVaultTest is Test {
 
     function testSwapEzETHForWETH() public {
         uint256 initialEzETHAmount = 1 ether;
-        uint256 amountOutMinimum = 0.95 ether; // Expecting at least 95% of the input amount
+        uint256 amountOutMinimum = 0.95 ether;
 
-        // Mint some ezETH to the vault
-        deal(address(ezETH), address(vault), initialEzETHAmount);
+        deal(address(ezETH), address(vault), 2 ether);
 
         console.log(
             "Initial ezETH balance of vault:",
@@ -273,13 +272,14 @@ contract McVaultTest is Test {
 
         vm.startPrank(vault.owner());
 
-        try vault.swapEzETHForWETH(initialEzETHAmount, 0) returns (
+        try vault.swapEzETHForWETH(initialEzETHAmount, 0, 100) returns (
             uint256 amountOut
         ) {
             console.log("Swap successful");
             console.log("Amount of WETH received:", amountOut);
-        } catch Error(string memory reason) {
-            console.log("Swap failed:", reason);
+        } catch (bytes memory lowLevelData) {
+            console.log("Swap failed with low-level error:");
+            console.logBytes(lowLevelData);
             vm.stopPrank();
             return;
         }

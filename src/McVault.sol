@@ -220,15 +220,12 @@ contract McVault is ERC4626, Ownable {
     ) external onlyOwner returns (uint256) {
         ezETH.approve(address(swapRouter), ezETHAmount);
 
-        emit balanceOFWETH(ezETH.balanceOf(address(this)));
-        // Set up the parameters for the swap
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: address(ezETH),
                 tokenOut: address(underlyingAsset),
-                fee: _feetier, // 0.3% fee tier
+                fee: _feetier,
                 recipient: address(this),
-                deadline: block.timestamp,
                 amountIn: ezETHAmount,
                 amountOutMinimum: amountOutMinimum,
                 sqrtPriceLimitX96: 0
@@ -249,15 +246,12 @@ contract McVault is ERC4626, Ownable {
         uint256 amountIn = IERC20(_opTokens).balanceOf(address(this));
         IERC20(_opTokens).approve(address(swapRouter), amountIn);
 
-        emit balanceOFWETH(ezETH.balanceOf(address(this)));
-        // Set up the parameters for the swap
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: _opTokens,
                 tokenOut: address(underlyingAsset),
-                fee: _feetier, // 0.3% fee tier
+                fee: _feetier,
                 recipient: address(this),
-                deadline: block.timestamp,
                 amountIn: amountIn,
                 amountOutMinimum: amountOutMinimum,
                 sqrtPriceLimitX96: 0
@@ -276,5 +270,13 @@ contract McVault is ERC4626, Ownable {
         (bool success, bytes memory result) = target.call(data);
         require(success, "Function call failed");
         return result;
+    }
+
+    function emergencyWithdrawl(
+        address _token,
+        uint256 _amount,
+        address _recipient
+    ) public onlyOwner returns (bytes memory) {
+        IERC20(_token).transfer(_recipient, _amount);
     }
 }

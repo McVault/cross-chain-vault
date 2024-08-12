@@ -36,8 +36,6 @@ contract McVaultTest is Test {
     MarketParams marketParams;
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("BASE_RPC_URL"));
-
         morphoBlueSnippets = new MorphoBlueSnippets(MORPHO_ADDRESS);
         baseToOptimism = new BaseToOptimism(MORPHO_ADDRESS, address(LINK_BASE));
         swapRouter = ISwapRouter(SWAP_ROUTER_ADDRESS);
@@ -59,145 +57,145 @@ contract McVaultTest is Test {
         deal(address(weth), USER, INITIAL_BALANCE);
     }
 
-    // function testDeposit() public {
-    //     uint256 depositAmount = 1 ether;
+    function testDeposit() public {
+        uint256 depositAmount = 1 ether;
 
-    //     console.log("Initial WETH balance of USER:", weth.balanceOf(USER));
-    //     console.log(
-    //         "Initial WETH balance of vault:",
-    //         weth.balanceOf(address(vault))
-    //     );
+        console.log("Initial WETH balance of USER:", weth.balanceOf(USER));
+        console.log(
+            "Initial WETH balance of vault:",
+            weth.balanceOf(address(vault))
+        );
 
-    //     vm.startPrank(USER);
-    //     weth.approve(address(vault), depositAmount);
-    //     console.log("WETH approved for vault");
+        vm.startPrank(USER);
+        weth.approve(address(vault), depositAmount);
+        console.log("WETH approved for vault");
 
-    //     try vault.deposit(depositAmount, USER) {
-    //         console.log("Deposit successful");
-    //     } catch Error(string memory reason) {
-    //         console.log("Deposit failed:", reason);
-    //         vm.stopPrank();
-    //         return;
-    //     }
-    //     vm.stopPrank();
+        try vault.deposit(depositAmount, USER) {
+            console.log("Deposit successful");
+        } catch Error(string memory reason) {
+            console.log("Deposit failed:", reason);
+            vm.stopPrank();
+            return;
+        }
+        vm.stopPrank();
 
-    //     console.log(
-    //         "WETH balance of USER after deposit:",
-    //         weth.balanceOf(USER)
-    //     );
-    //     console.log(
-    //         "WETH balance of vault after deposit:",
-    //         weth.balanceOf(address(vault))
-    //     );
-    //     console.log("Vault balance of USER:", vault.balanceOf(USER));
-    // }
+        console.log(
+            "WETH balance of USER after deposit:",
+            weth.balanceOf(USER)
+        );
+        console.log(
+            "WETH balance of vault after deposit:",
+            weth.balanceOf(address(vault))
+        );
+        console.log("Vault balance of USER:", vault.balanceOf(USER));
+    }
 
-    // function testAfterDeposit() public {
-    //     uint256 depositAmount = 1 ether;
+    function testAfterDeposit() public {
+        uint256 depositAmount = 1 ether;
 
-    //     console.log("Initial WETH balance of USER:", weth.balanceOf(USER));
-    //     console.log(
-    //         "Initial WETH balance of vault:",
-    //         weth.balanceOf(address(vault))
-    //     );
+        console.log("Initial WETH balance of USER:", weth.balanceOf(USER));
+        console.log(
+            "Initial WETH balance of vault:",
+            weth.balanceOf(address(vault))
+        );
 
-    //     vm.startPrank(USER);
-    //     weth.approve(address(vault), depositAmount);
-    //     try vault.deposit(depositAmount, USER) {
-    //         console.log("Deposit successful");
-    //     } catch Error(string memory reason) {
-    //         console.log("Deposit failed:", reason);
-    //         vm.stopPrank();
-    //         return;
-    //     }
-    //     vm.stopPrank();
+        vm.startPrank(USER);
+        weth.approve(address(vault), depositAmount);
+        try vault.deposit(depositAmount, USER) {
+            console.log("Deposit successful");
+        } catch Error(string memory reason) {
+            console.log("Deposit failed:", reason);
+            vm.stopPrank();
+            return;
+        }
+        vm.stopPrank();
 
-    //     console.log(
-    //         "WETH balance of USER after deposit:",
-    //         weth.balanceOf(USER)
-    //     );
-    //     console.log(
-    //         "WETH balance of vault after deposit:",
-    //         weth.balanceOf(address(vault))
-    //     );
+        console.log(
+            "WETH balance of USER after deposit:",
+            weth.balanceOf(USER)
+        );
+        console.log(
+            "WETH balance of vault after deposit:",
+            weth.balanceOf(address(vault))
+        );
 
-    //     uint256 slippage = 40; // 4% slippage
-    //     uint256 minAmount = depositAmount - ((depositAmount * slippage) / 1000);
-    //     console.log("Minimum expected amount after slippage:", minAmount);
+        uint256 slippage = 40; // 4% slippage
+        uint256 minAmount = depositAmount - ((depositAmount * slippage) / 1000);
+        console.log("Minimum expected amount after slippage:", minAmount);
 
-    //     vm.prank(vault.owner());
-    //     try vault.afterDeposit(depositAmount) {
-    //         console.log("afterDeposit successful");
-    //     } catch Error(string memory reason) {
-    //         console.log("afterDeposit failed:", reason);
-    //         return;
-    //     }
+        vm.prank(vault.owner());
+        try vault.afterDeposit(depositAmount) {
+            console.log("afterDeposit successful");
+        } catch Error(string memory reason) {
+            console.log("afterDeposit failed:", reason);
+            return;
+        }
 
-    //     console.log(
-    //         "ezETH balance of vault after Renzo deposit:",
-    //         ezETH.balanceOf(address(vault))
-    //     );
-    // }
+        console.log(
+            "ezETH balance of vault after Renzo deposit:",
+            ezETH.balanceOf(address(vault))
+        );
+    }
 
-    // function testDepositOnMorpho() public {
-    //     uint256 depositAmount = 1 ether;
-    //     uint256 maxBorrow = 1000000; // 50% of deposit amount
+    function testDepositOnMorpho() public {
+        uint256 depositAmount = 1 ether;
+        uint256 maxBorrow = 1000000; // 50% of deposit amount
 
-    //     // Mint some ezETH to the vault
-    //     deal(address(ezETH), address(vault), depositAmount);
+        // Mint some ezETH to the vault
+        deal(address(ezETH), address(vault), depositAmount);
 
-    //     console.log(
-    //         "Initial ezETH balance of vault:",
-    //         ezETH.balanceOf(address(vault))
-    //     );
-    //     console.log(
-    //         "Initial USDC balance of vault:",
-    //         usdc.balanceOf(address(vault))
-    //     );
+        console.log(
+            "Initial ezETH balance of vault:",
+            ezETH.balanceOf(address(vault))
+        );
+        console.log(
+            "Initial USDC balance of vault:",
+            usdc.balanceOf(address(vault))
+        );
 
-    //     vm.startPrank(vault.owner());
+        vm.startPrank(vault.owner());
 
-    //     try vault.depositOnMorpho(depositAmount, maxBorrow) returns (
-    //         uint256 collateralSupplied,
-    //         uint256 sharesBorrowed,
-    //         uint256 assetsBorrowed
-    //     ) {
-    //         console.log("Deposit on Morpho successful");
-    //         console.log("Collateral supplied:", collateralSupplied);
-    //         console.log("Shares borrowed:", sharesBorrowed);
-    //         console.log("Assets borrowed:", assetsBorrowed);
-    //     } catch Error(string memory reason) {
-    //         console.log("Deposit on Morpho failed:", reason);
-    //         vm.stopPrank();
-    //         return;
-    //     }
+        try vault.depositOnMorpho(depositAmount, maxBorrow) returns (
+            uint256 collateralSupplied,
+            uint256 sharesBorrowed,
+            uint256 assetsBorrowed
+        ) {
+            console.log("Deposit on Morpho successful");
+            console.log("Collateral supplied:", collateralSupplied);
+            console.log("Shares borrowed:", sharesBorrowed);
+            console.log("Assets borrowed:", assetsBorrowed);
+        } catch Error(string memory reason) {
+            console.log("Deposit on Morpho failed:", reason);
+            vm.stopPrank();
+            return;
+        }
 
-    //     vm.stopPrank();
+        vm.stopPrank();
 
-    //     console.log(
-    //         "ezETH balance of vault after deposit:",
-    //         ezETH.balanceOf(address(vault))
-    //     );
-    //     console.log(
-    //         "USDC balance of vault after borrow:",
-    //         usdc.balanceOf(address(vault))
-    //     );
+        console.log(
+            "ezETH balance of vault after deposit:",
+            ezETH.balanceOf(address(vault))
+        );
+        console.log(
+            "USDC balance of vault after borrow:",
+            usdc.balanceOf(address(vault))
+        );
 
-    //     // Get the market ID
-    //     Id marketParamsId = MarketParamsLib.id(marketParams);
+        // Get the market ID
+        Id marketParamsId = MarketParamsLib.id(marketParams);
 
-    //     // Get the current position
-    //     Position memory position = vault.morphoBlue().getPosition(
-    //         marketParamsId,
-    //         address(vault)
-    //     );
+        // Get the current position
+        Position memory position = vault.morphoBlue().getPosition(
+            marketParamsId,
+            address(vault)
+        );
 
-    //     // Assert that we have borrowed some USDC
-    //     assertTrue(
-    //         usdc.balanceOf(address(vault)) > 0,
-    //         "USDC balance should be greater than 0 after borrowing"
-    //     );
-    // }
+        // Assert that we have borrowed some USDC
+        assertTrue(
+            usdc.balanceOf(address(vault)) > 0,
+            "USDC balance should be greater than 0 after borrowing"
+        );
+    }
 
     // function testBridgeUsdcFromBaseToOP() public {
     //     uint64 destinationChainSelector = 111; // Example selector for Optimism
@@ -259,7 +257,7 @@ contract McVaultTest is Test {
         uint256 initialEzETHAmount = 1 ether;
         uint256 amountOutMinimum = 0.95 ether;
 
-        deal(address(ezETH), address(vault), 2 ether);
+        deal(address(ezETH), address(vault), 1 ether);
 
         console.log(
             "Initial ezETH balance of vault:",
@@ -272,7 +270,7 @@ contract McVaultTest is Test {
 
         vm.startPrank(vault.owner());
 
-        try vault.swapEzETHForWETH(initialEzETHAmount, 0, 100) returns (
+        try vault.swapEzETHForWETH(initialEzETHAmount, 0, 500) returns (
             uint256 amountOut
         ) {
             console.log("Swap successful");

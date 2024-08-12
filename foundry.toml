@@ -11,3 +11,7 @@ remappings = [
     '@chainlink/local/=lib/chainlink-local/'
 ]
 
+[etherscan]
+sepolia = { key = "JGWS1C3GSNW3GQYVU5AHMB5Y2I9KUI6YHW" }
+base ={key = "6JHTJ2RIUFUFUIE5SQS1AXM5BBMVVXHMYI"}
+

@@ -1,29 +1,42 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-
+// openZeppelin
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "../src/morphoBlueSnippets.sol";
+
+// CCIP
 import {BaseToOptimism} from "../src/ccip/baseToOptimism.sol";
+
+// RENZO
 import "./interfaces/renzo/IRenzoDepositContract.sol";
-import {MarketParamsLib} from "./interfaces/morpho/libraries/MarketParamsLib.sol";
+
+// UNISWAP
 import "./interfaces/uniswap/ISwapRouter.sol";
 
+// MORPHO
+import {MarketParamsLib} from "./interfaces/morpho/libraries/MarketParamsLib.sol";
+import {MorphoLib} from "../src/interfaces/morpho/libraries/periphery/MorphoLib.sol";
+import {MorphoBalancesLib} from "../src/interfaces/morpho/libraries/periphery/MorphoBalancesLib.sol";
+import {SharesMathLib} from "../src/interfaces/morpho/libraries/SharesMathLib.sol";
+
 contract McVault is ERC4626, Ownable {
-    using MarketParamsLib for MarketParams;
     using Math for uint256;
+    using MorphoLib for IMorpho;
+    using MorphoBalancesLib for IMorpho;
+    using MarketParamsLib for MarketParams;
 
     ISwapRouter public swapRouter;
     IRenzoDepositContract public renzo; // renzo WETH to EzETH
-    MorphoBlueSnippets public morphoBlue; // morpho market EzETH to USDC
     BaseToOptimism public baseToOptimism; // CCIP send USDC from Base to OP
-    IERC20 public underlyingAsset; // WETH
+    address public USDC; // USDC
     IERC20 public ezETH; // ezETH
+    IERC20 public underlyingAsset; // WETH
+    IMorpho public immutable morpho;
+
     MarketParams public marketParams; // params for morpho market of EzETH and USDC
     uint256 public constant WITHDRAWAL_LOCK_PERIOD = 30 days;
     mapping(address => uint256) public lastDepositTimestamp;
-    address public USDC;
 
     event Borrowed(uint256 assetsBorrowed, uint256 sharesBorrowed);
     event Repaid(uint256 assetsRepaid, uint256 sharesRepaid);
@@ -41,7 +54,8 @@ contract McVault is ERC4626, Ownable {
         address _USDC
     ) ERC4626(_asset) ERC20("Mc Vault", "MCV") Ownable(msg.sender) {
         underlyingAsset = IERC20(_asset);
-        morphoBlue = MorphoBlueSnippets(_morphoBlue);
+        // morphoBlue = MorphoBlueSnippets(_morphoBlue);
+        morpho = IMorpho(_morphoBlue);
         renzo = IRenzoDepositContract(_renzo);
         baseToOptimism = BaseToOptimism(payable(_baseToOptimism));
         swapRouter = ISwapRouter(_swapRouter);
@@ -116,25 +130,24 @@ contract McVault is ERC4626, Ownable {
         uint256 assets,
         uint256 maxBorrow
     ) public returns (uint256, uint256, uint256) {
-        IERC20(marketParams.collateralToken).approve(
-            address(morphoBlue),
-            assets
-        );
-        uint256 collateralSupplied = morphoBlue.supplyCollateral(
-            marketParams,
-            assets
-        );
+        morpho.supplyCollateral(marketParams, amount, address(this), hex"");
+        Position memory pos = morpho.position(marketParams.id(), address(this));
 
-        morphoBlue.setAuthorization(true);
+        // set authorization
+        morpho.setAuthorization(address(this), true);
 
-        (uint256 assetsBorrowed, uint256 sharesBorrowed) = morphoBlue.borrow(
+        // has to be calcualted
+        uint256 amountToBorrow;
+
+        (assetsBorrowed, sharesBorrowed) = morpho.borrow(
             marketParams,
-            maxBorrow,
+            amountToBorrow,
+            0,
+            address(this),
             address(this)
         );
 
         emit Borrowed(assetsBorrowed, sharesBorrowed);
-        return (collateralSupplied, sharesBorrowed, assetsBorrowed);
     }
 
     function afterDeposit(uint256 assets) external onlyOwner {

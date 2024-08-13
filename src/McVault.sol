@@ -46,6 +46,7 @@ contract McVault is ERC4626, Ownable {
     event CollateralWithdrawn(uint256 collateralWithdrawn);
     event Swapped(uint256 ezETHAmount, uint256 wethReceived);
     event balanceOFWETH(uint256);
+    event allulelo(uint256, uint256, uint256);
 
     constructor(
         address _morphoBlue,
@@ -167,15 +168,13 @@ contract McVault is ERC4626, Ownable {
 
     function afterDeposit(
         uint256 assets,
-        uint256 _morphoUsdcBorrowPercentage
+        uint256 _morphoUsdcBorrowPercentage,
+        uint256 _minAmount
     ) external onlyOwner {
-        uint256 slippage = 10; // 1% slippage
-        uint256 minAmount = assets - ((assets * slippage) / 1000); // Subtracting 10% from assets
-
         uint256 ezETHAmount = depositOnRenzo(
             assets,
-            minAmount,
-            block.timestamp + 1 hours
+            _minAmount,
+            block.timestamp
         );
         require(ezETHAmount > 0, "EzETH should be greater than zero");
         (uint256 assetsBorrowed, uint256 sharesBorrowed) = depositOnMorpho(
@@ -205,66 +204,36 @@ contract McVault is ERC4626, Ownable {
     }
 
     function beforeWithdraw(
-        uint256 proportion
+        uint256 _shares,
+        uint256 _amount,
+        uint256 _withdrawAmount
     ) external onlyOwner returns (uint256) {
-        // Get the market ID
-        Id marketParamsId = MarketParamsLib.id(marketParams);
+        // uint256 amount;
+        address onBehalf = address(this);
 
-        // morpho.position(id, _address)
-        // Get the current position
-        Position memory position = morpho.position(
-            marketParamsId,
+        IERC20(marketParams.loanToken).approve(
+            address(morpho),
+            type(uint256).max
+        );
+
+        (uint256 assets, uint256 shares) = morpho.repay(
+            marketParams,
+            _amount,
+            _shares,
+            onBehalf,
+            hex""
+        );
+
+        morpho.withdrawCollateral(
+            marketParams,
+            _withdrawAmount,
+            onBehalf,
             address(this)
         );
 
-        // Calculate amounts to repay and withdraw
-        uint256 borrowShares = (position.borrowShares * proportion) / 1e18;
-        uint256 collateralToWithdraw = (position.collateral * proportion) /
-            1e18;
+        uint EzETHAmount = ezETH.balanceOf(address(this));
 
-        // Repay borrowed amount
-        if (borrowShares > 0) {
-            IERC20(marketParams.loanToken).approve(
-                address(morpho),
-                type(uint256).max
-            );
-
-            // morphoBlue.repayNew(marketParams, borrowShares);
-            ERC20(marketParams.loanToken).approve(
-                address(morpho),
-                type(uint256).max
-            );
-            morpho.repay(
-                marketParams,
-                collateralToWithdraw,
-                0,
-                address(this),
-                hex""
-            );
-
-            emit Repaid(0, borrowShares);
-        }
-
-        // Withdraw collateral
-        if (collateralToWithdraw > 0) {
-            // morpho.withdrawCollateral(
-            //     marketParams,
-            //     collateralToWithdraw,
-            //     address(this)
-            // );
-            morpho.withdrawCollateral(
-                marketParams,
-                collateralToWithdraw,
-                address(this),
-                address(this)
-            );
-
-            uint EzETHAmount = ezETH.balanceOf(address(this));
-
-            return EzETHAmount;
-        }
-
-        return 0;
+        return EzETHAmount;
     }
 
     function swapEzETHForWETH(

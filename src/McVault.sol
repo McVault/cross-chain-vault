@@ -15,16 +15,19 @@ import "./interfaces/renzo/IRenzoDepositContract.sol";
 import "./interfaces/uniswap/ISwapRouter.sol";
 
 // MORPHO
+import "../src/interfaces/morpho/IMorpho.sol";
 import {MarketParamsLib} from "./interfaces/morpho/libraries/MarketParamsLib.sol";
+import {SharesMathLib} from "../src/interfaces/morpho/libraries/SharesMathLib.sol";
 import {MorphoLib} from "../src/interfaces/morpho/libraries/periphery/MorphoLib.sol";
 import {MorphoBalancesLib} from "../src/interfaces/morpho/libraries/periphery/MorphoBalancesLib.sol";
-import {SharesMathLib} from "../src/interfaces/morpho/libraries/SharesMathLib.sol";
+import {IOracle} from "../src/interfaces/morpho/IOracle.sol";
 
 contract McVault is ERC4626, Ownable {
     using Math for uint256;
     using MorphoLib for IMorpho;
     using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
+    using SharesMathLib for uint256;
 
     ISwapRouter public swapRouter;
     IRenzoDepositContract public renzo; // renzo WETH to EzETH
@@ -128,30 +131,45 @@ contract McVault is ERC4626, Ownable {
 
     function depositOnMorpho(
         uint256 assets,
-        uint256 maxBorrow
-    ) public returns (uint256, uint256, uint256) {
-        morpho.supplyCollateral(marketParams, amount, address(this), hex"");
+        uint256 _morphoUsdcBorrowPercentage
+    ) public returns (uint256, uint256) {
+        ezETH.approve(address(morpho), assets);
+        morpho.supplyCollateral(marketParams, assets, address(this), hex"");
         Position memory pos = morpho.position(marketParams.id(), address(this));
 
         // set authorization
         morpho.setAuthorization(address(this), true);
 
         // has to be calcualted
-        uint256 amountToBorrow;
+        // uint256 amountToBorrow;
+        // Id marketParamsId = MarketParamsLib.id(marketParams);
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
-        (assetsBorrowed, sharesBorrowed) = morpho.borrow(
+        // Position memory pos = morpho.position(marketParamsId, address(this)); // Fetch the position details
+
+        uint256 maxBorrow = uint256(pos.collateral)
+            .mulDiv(collateralPrice, 1e36)
+            .mulDiv(marketParams.lltv, 1e18);
+
+        maxBorrow = maxBorrow.mulDiv(_morphoUsdcBorrowPercentage, 100); // 60 percent of the maxBorrow (60% of 77% borrow limit)
+
+        (uint256 assetsBorrowed, uint256 sharesBorrowed) = morpho.borrow(
             marketParams,
-            amountToBorrow,
+            maxBorrow,
             0,
             address(this),
             address(this)
         );
 
         emit Borrowed(assetsBorrowed, sharesBorrowed);
+        return (assetsBorrowed, sharesBorrowed);
     }
 
-    function afterDeposit(uint256 assets) external onlyOwner {
-        uint256 slippage = 40; // 4% slippage
+    function afterDeposit(
+        uint256 assets,
+        uint256 _morphoUsdcBorrowPercentage
+    ) external onlyOwner {
+        uint256 slippage = 10; // 1% slippage
         uint256 minAmount = assets - ((assets * slippage) / 1000); // Subtracting 10% from assets
 
         uint256 ezETHAmount = depositOnRenzo(
@@ -160,6 +178,11 @@ contract McVault is ERC4626, Ownable {
             block.timestamp + 1 hours
         );
         require(ezETHAmount > 0, "EzETH should be greater than zero");
+        (uint256 assetsBorrowed, uint256 sharesBorrowed) = depositOnMorpho(
+            ezETHAmount,
+            _morphoUsdcBorrowPercentage
+        );
+        require(assetsBorrowed > 0 && sharesBorrowed > 0, "USDC Not Borrowed");
     }
 
     function bridgeUsdcFromBaseToOP(
@@ -187,8 +210,9 @@ contract McVault is ERC4626, Ownable {
         // Get the market ID
         Id marketParamsId = MarketParamsLib.id(marketParams);
 
+        // morpho.position(id, _address)
         // Get the current position
-        Position memory position = morphoBlue.getPosition(
+        Position memory position = morpho.position(
             marketParamsId,
             address(this)
         );
@@ -201,20 +225,37 @@ contract McVault is ERC4626, Ownable {
         // Repay borrowed amount
         if (borrowShares > 0) {
             IERC20(marketParams.loanToken).approve(
-                address(morphoBlue),
+                address(morpho),
                 type(uint256).max
             );
 
-            morphoBlue.repayNew(marketParams, borrowShares);
+            // morphoBlue.repayNew(marketParams, borrowShares);
+            ERC20(marketParams.loanToken).approve(
+                address(morpho),
+                type(uint256).max
+            );
+            morpho.repay(
+                marketParams,
+                collateralToWithdraw,
+                0,
+                address(this),
+                hex""
+            );
 
             emit Repaid(0, borrowShares);
         }
 
         // Withdraw collateral
         if (collateralToWithdraw > 0) {
-            morphoBlue.withdrawCollateral(
+            // morpho.withdrawCollateral(
+            //     marketParams,
+            //     collateralToWithdraw,
+            //     address(this)
+            // );
+            morpho.withdrawCollateral(
                 marketParams,
                 collateralToWithdraw,
+                address(this),
                 address(this)
             );
 

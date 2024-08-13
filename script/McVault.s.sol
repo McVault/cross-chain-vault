@@ -21,7 +21,8 @@ contract DeployMcVault is Script {
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
     uint64 OP_CHAINSELECTOR = 3734403246176062136;
-    address constant OP_TO_BASE_CONTRACT_ADDRESS = ; // TO DO : CONTRACT ADDRESS AFTER DEPLOYMENT
+    address constant OP_TO_BASE_CONTRACT_ADDRESS =
+        0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // TO DO : CONTRACT ADDRESS AFTER DEPLOYMENT
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -46,9 +47,6 @@ contract DeployMcVault is Script {
         baseToOptimism.allowlistSender(OP_TO_BASE_CONTRACT_ADDRESS, true);
         baseToOptimism.allowlistSourceChain(OP_CHAINSELECTOR, true);
         baseToOptimism.allowlistDestinationChain(OP_CHAINSELECTOR, true);
-
-
-
 
         // Deploy McVault
         McVault vault = new McVault(

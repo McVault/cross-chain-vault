@@ -14,10 +14,14 @@ contract DeployMcVault is Script {
         0xf25484650484DE3d554fB0b7125e7696efA4ab99;
     address constant SWAP_ROUTER_ADDRESS =
         0x2626664c2603336E57B271c5C0b26F421741e481;
+    address constant BASE_ROUTER = 0x881e3A65B4d4a04dD529061dd0071cf975F58bCD;
     address constant LINK_BASE = 0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196;
     address constant WETH = 0x4200000000000000000000000000000000000006;
     address constant EZETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+
+    uint64 OP_CHAINSELECTOR = 3734403246176062136;
+    address constant OP_TO_BASE_CONTRACT_ADDRESS = ; // TO DO : CONTRACT ADDRESS AFTER DEPLOYMENT
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -34,10 +38,17 @@ contract DeployMcVault is Script {
 
         // Deploy BaseToOptimism
         BaseToOptimism baseToOptimism = new BaseToOptimism(
-            MORPHO_ADDRESS,
+            BASE_ROUTER,
             LINK_BASE
         );
         console.log("BaseToOptimism deployed at:", address(baseToOptimism));
+
+        baseToOptimism.allowlistSender(OP_TO_BASE_CONTRACT_ADDRESS, true);
+        baseToOptimism.allowlistSourceChain(OP_CHAINSELECTOR, true);
+        baseToOptimism.allowlistDestinationChain(OP_CHAINSELECTOR, true);
+
+
+
 
         // Deploy McVault
         McVault vault = new McVault(

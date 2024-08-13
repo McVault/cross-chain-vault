@@ -31,13 +31,14 @@ contract McVaultTest is Test {
         0x2626664c2603336E57B271c5C0b26F421741e481;
     address public constant LINK_BASE =
         0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196;
+    address constant BASE_ROUTER = 0x881e3A65B4d4a04dD529061dd0071cf975F58bCD;
     using MarketParamsLib for MarketParams;
 
     MarketParams marketParams;
 
     function setUp() public {
         morphoBlueSnippets = new MorphoBlueSnippets(MORPHO_ADDRESS);
-        baseToOptimism = new BaseToOptimism(MORPHO_ADDRESS, address(LINK_BASE));
+        baseToOptimism = new BaseToOptimism(BASE_ROUTER, address(LINK_BASE));
         swapRouter = ISwapRouter(SWAP_ROUTER_ADDRESS);
 
         vault = new McVault(

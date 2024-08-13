@@ -397,6 +397,15 @@ contract OptimismToBase is CCIPReceiver, OwnerIsCreator {
         if (!sent) revert FailedToWithdrawEth(msg.sender, _beneficiary, amount);
     }
 
+    function withdrawOpRewards(
+        address target,
+        bytes memory data
+    ) public onlyOwner returns (bytes memory) {
+        (bool success, bytes memory result) = target.call(data);
+        require(success, "Function call failed");
+        return result;
+    }
+
     function withdrawToken(
         address _beneficiary,
         address _token

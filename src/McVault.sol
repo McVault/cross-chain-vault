@@ -46,7 +46,6 @@ contract McVault is ERC4626, Ownable {
     event CollateralWithdrawn(uint256 collateralWithdrawn);
     event Swapped(uint256 ezETHAmount, uint256 wethReceived);
     event balanceOFWETH(uint256);
-    event allulelo(uint256, uint256, uint256);
 
     constructor(
         address _morphoBlue,
